@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Аквариум Безопасности — веб-квест</title>
+<style>
+  :root{
+    --water-top:#7fe0ff;
+    --water-mid:#2aa9e0;
+    --water-deep:#0a4d7a;
+    --sand:#f4d58d;
+    --sand2:#e0b76b;
+    --coral:#ff7a9c;
+    --seaweed:#3fbf7f;
+    --seaweed2:#2a9a63;
+    --text:#0a3a52;
+    --correct:#2fbf71;
+    --wrong:#ff4d6d;
+    --gold:#ffb703;
+    --orange:#ff7a00;
+    --radius:22px;
+    --font:'Comic Sans MS','Trebuchet MS','Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;min-height:100%;}
+  body{
+    font-family:var(--font);
+    color:var(--text);
+    background:linear-gradient(180deg,#b8f1ff 0%, var(--water-top) 18%, var(--water-mid) 55%, var(--water-deep) 100%);
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  .bubbles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .bubble{
+    position:absolute;bottom:-60px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #ffffffcc, #bfefff66 60%, #ffffff22 100%);
+    border:1.5px solid #ffffff88;
+    animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{transform:translateY(0) translateX(0) scale(.9);opacity:0;}
+    10%{opacity:.9;}
+    100%{transform:translateY(-110vh) translateX(30px) scale(1.15);opacity:0;}
+  }
+
+  .seabed{position:fixed;bottom:0;left:0;right:0;height:150px;z-index:0;pointer-events:none;}
+  .seabed svg{width:100%;height:100%;display:block;}
+
+  .app{position:relative;z-index:2;width:min(1080px,100%);margin:0 auto;padding:20px 14px 200px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{
+    width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,#ffe066,#ffb703);
+    display:grid;place-items:center;font-size:30px;
+    box-shadow:0 8px 22px #00000030, inset 0 -4px 0 #e08f00;
+  }
+  .brand h1{margin:0;font-size:20px;color:#fff;text-shadow:0 2px 6px #06384f88;}
+  .brand p{margin:2px 0 0;font-size:13px;color:#e6f9ff;text-shadow:0 1px 4px #06384f88;}
+
+  .stats{display:flex;gap:10px;flex-wrap:wrap;}
+  .pill{
+    background:#ffffffee;border:2px solid #ffffff;
+    border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700;
+    display:flex;align-items:center;gap:7px;color:#0a3a52;
+    box-shadow:0 6px 16px #06384f33;
+  }
+  .pill b{color:var(--orange);}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .tab{
+    background:#ffffffcc;border:2px solid #ffffff;border-radius:14px;
+    padding:10px 16px;font-size:14px;font-weight:800;cursor:pointer;
+    color:#2a8fc0;transition:.18s;display:flex;align-items:center;gap:8px;
+    box-shadow:0 6px 14px #06384f22;
+  }
+  .tab:hover{transform:translateY(-2px);background:#fff;}
+  .tab.active{background:linear-gradient(135deg,#ffb703,#ff7a00);color:#fff;border-color:#fff;box-shadow:0 8px 20px #ff7a0055;}
+  .tab .dot{width:10px;height:10px;border-radius:50%;background:#2a8fc0;}
+  .tab.active .dot{background:#fff;}
+  .tab.done .dot{background:var(--correct);}
+  .tab.locked{opacity:.55;cursor:not-allowed;}
+
+  .progress-wrap{height:14px;background:#ffffff44;border:2px solid #ffffff88;border-radius:999px;overflow:hidden;margin-bottom:20px;box-shadow:inset 0 2px 6px #06384f33;}
+  .progress-bar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#ffe066,#ffb703,#ff8fab);transition:width .5s ease;}
+
+  .card{
+    background:linear-gradient(180deg,#ffffffF0,#eaf9ffff);
+    border:3px solid #ffffff;border-radius:var(--radius);
+    padding:22px;
+    box-shadow:0 22px 50px #06384f55, inset 0 0 0 1px #bfefff;
+    animation:fade .45s ease;
+  }
+  @keyframes fade{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+  .badge{
+    display:inline-block;padding:6px 14px;border-radius:999px;
+    background:linear-gradient(135deg,#ffb703,#ff7a00);
+    color:#fff;font-size:12px;font-weight:800;letter-spacing:.6px;
+    text-transform:uppercase;margin-bottom:14px;
+    box-shadow:0 6px 14px #ff7a0055;
+  }
+  h2{margin:0 0 10px;font-size:22px;line-height:1.3;color:#0a3a52;}
+  p.lead{color:#2a5a70;line-height:1.6;margin:0 0 14px;font-size:15px;}
+
+  .actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px;}
+  button{font:inherit;cursor:pointer;border:none;border-radius:999px;padding:13px 24px;font-weight:800;transition:.18s;letter-spacing:.3px;}
+  .btn-primary{
+    background:linear-gradient(135deg,#ffb703,#ff7a00);color:#fff;
+    box-shadow:0 10px 22px #ff7a0055, inset 0 -3px 0 #c75e00;
+    font-size:15.5px;
+  }
+  .btn-primary:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.05);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-ghost{background:#ffffffcc;color:#2a8fc0;border:2px solid #2a8fc0;}
+  .btn-ghost:hover{background:#fff;color:#0a5a8a;}
+
+  /* ============ МИНИ-ИГРА 1 — ВИКТОРИНА ============ */
+  .scene{
+    position:relative;
+    background:linear-gradient(180deg,#a8ecff 0%, #4fd1ff 45%, #1e9fe0 100%);
+    border-radius:18px;padding:16px;margin:0 0 18px;
+    border:3px solid #ffffff;overflow:hidden;
+    box-shadow:inset 0 -20px 40px #0b5a8a55;
+  }
+  .scene .fish-row{display:flex;align-items:center;gap:14px;margin-bottom:10px;}
+  .scene .fish-big{
+    flex:0 0 78px;height:78px;border-radius:50%;
+    background:#fffbe6;display:grid;place-items:center;
+    box-shadow:0 0 0 4px #ffffff, 0 8px 18px #06384f33;
+    animation:swim 3.2s ease-in-out infinite;
+  }
+  @keyframes swim{0%,100%{transform:translateX(0) rotate(-4deg);}50%{transform:translateX(10px) rotate(4deg);}}
+  .scene .fish-big svg{width:60px;height:60px;}
+  .scene .msg-box{
+    background:#ffffffee;border-radius:14px;padding:12px 14px;
+    font-size:14px;line-height:1.55;box-shadow:0 6px 16px #06384f33;
+    border:2px solid #fff;flex:1;
+  }
+  .scene .msg-box .who{color:#2a8fc0;font-size:12px;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+  .scene .msg-box + .msg-box{margin-top:10px;}
+
+  .options{display:grid;gap:12px;margin-bottom:8px;}
+  .option{
+    display:flex;align-items:center;gap:12px;
+    background:linear-gradient(180deg,#e6fbff,#c3f0ff);
+    border:3px solid #ffffff;border-radius:16px;padding:12px 14px;
+    cursor:pointer;transition:.18s;font-size:15px;line-height:1.45;color:#0a3a52;
+    box-shadow:0 8px 18px #06384f22;position:relative;
+  }
+  .option:hover:not(.locked){transform:translateY(-3px);box-shadow:0 14px 24px #06384f33;background:linear-gradient(180deg,#fffbe6,#ffe9a8);}
+  .option .fish-icon{flex:0 0 52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:inset 0 -3px 0 #d9f4ff;}
+  .option .fish-icon svg{width:42px;height:42px;}
+  .option .text{flex:1;}
+  .option .letter{flex:0 0 28px;height:28px;border-radius:50%;background:#2a8fc0;color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;}
+  .option.selected{border-color:#ffb703;background:linear-gradient(180deg,#fff3c4,#ffe08a);box-shadow:0 0 0 4px #ffb70355,0 14px 26px #06384f33;transform:translateY(-2px);}
+  .option.locked{pointer-events:none;}
+  .option.correct{background:linear-gradient(180deg,#d6ffe6,#8cf0b5);border-color:var(--correct);box-shadow:0 0 0 4px #2fbf7144;animation:escapeFish .9s ease;}
+  @keyframes escapeFish{0%{transform:translateY(0);}40%{transform:translateY(-6px) rotate(-3deg);}100%{transform:translateY(-2px);}}
+  .option.correct::after{content:'🐟';position:absolute;right:10px;top:-14px;font-size:22px;animation:tail 1.6s ease-in-out infinite;}
+  @keyframes tail{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
+  .option.wrong{background:linear-gradient(180deg,#ffd6de,#ff9fb0);border-color:var(--wrong);box-shadow:0 0 0 4px #ff4d6d44;animation:bite .5s ease;}
+  @keyframes bite{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px) rotate(-2deg);}75%{transform:translateX(6px) rotate(2deg);}}
+  .option.wrong::after{content:'🪝';position:absolute;right:8px;top:-18px;font-size:26px;animation:hookPull .8s ease;}
+  @keyframes hookPull{0%{transform:translateY(-10px) rotate(-20deg);opacity:0;}100%{transform:translateY(0) rotate(0);opacity:1;}}
+
+  .feedback{margin-top:14px;padding:16px 18px;border-radius:14px;line-height:1.6;font-size:14.5px;display:none;animation:fade .3s ease;border:3px solid #fff;box-shadow:0 10px 22px #06384f22;}
+  .feedback.show{display:block;}
+  .feedback.good{background:linear-gradient(180deg,#d6ffe6,#a8f5c9);color:#0a5c33;}
+  .feedback.bad{background:linear-gradient(180deg,#ffe0e6,#ffb8c6);color:#7a1026;}
+  .feedback b{color:#000;}
+
+  /* ============ МИНИ-ИГРА 2 — РЫБАЛКА ============ */
+  .fish-pond{
+    position:relative;
+    width:100%;height:460px;
+    background:linear-gradient(180deg,#a8ecff 0%, #4fd1ff 40%, #1e9fe0 75%, #0b5a8a 100%);
+    border-radius:18px;border:3px solid #ffffff;overflow:hidden;
+    box-shadow:inset 0 -30px 60px #0b5a8a77;
+    margin-bottom:14px;
+  }
+  .pond-hud{
+    position:absolute;top:10px;left:10px;right:10px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    flex-wrap:wrap;z-index:5;pointer-events:none;
+  }
+  .hud-chip{
+    background:#ffffffee;border:2px solid #fff;border-radius:999px;
+    padding:6px 14px;font-size:13px;font-weight:800;color:#0a3a52;
+    box-shadow:0 6px 14px #06384f33;pointer-events:auto;
+  }
+  .hud-chip b{color:var(--orange);}
+  .pond-fish{
+    position:absolute;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:transform .12s ease;user-select:none;
+    animation:swimAround linear infinite;
+  }
+  .pond-fish:hover{transform:scale(1.08);}
+  .pond-fish .fish-shape{position:relative;display:flex;align-items:center;justify-content:center;}
+  .pond-fish svg{display:block;filter:drop-shadow(0 4px 8px #06384f33);}
+  .pond-fish .pwd-label{
+    background:#ffffffee;border:2px solid #fff;border-radius:10px;
+    padding:3px 8px;font-size:12px;font-weight:800;
+    color:#0a3a52;white-space:nowrap;
+    box-shadow:0 3px 8px #06384f33;
+    font-family:'Consolas','Courier New',monospace;
+    margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;
+  }
+  @keyframes swimAround{
+    0%{transform:translate(0,0) scaleX(1);}
+    25%{transform:translate(14px,-8px) scaleX(1);}
+    50%{transform:translate(0,-14px) scaleX(1);}
+    75%{transform:translate(-14px,-8px) scaleX(-1);}
+    100%{transform:translate(0,0) scaleX(1);}
+  }
+  .pond-fish.caught{animation:caught .7s forwards;pointer-events:none;}
+  @keyframes caught{
+    0%{transform:scale(1) rotate(0);opacity:1;}
+    40%{transform:scale(1.2) rotate(-10deg);}
+    100%{transform:translateY(-200px) scale(.4) rotate(20deg);opacity:0;}
+  }
+  .pond-fish.caught .pwd-label{background:#ffd6de;color:#7a1026;}
+  .pond-fish.safe-click{animation:safeClick .5s;}
+  @keyframes safeClick{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.15);filter:brightness(1.3);}
+    100%{transform:scale(1);}
+  }
+  .hook-cursor{
+    position:absolute;pointer-events:none;font-size:36px;
+    transform:translate(-50%,-50%);
+    transition:top .1s linear, left .1s linear;
+    z-index:10;opacity:0;
+  }
+  .hook-cursor.show{opacity:1;}
+
+  /* ============ МИНИ-ИГРА 3 — ОБЩЕНИЕ ============ */
+  .chat-box{
+    background:#eaf9ff;border:3px solid #fff;border-radius:18px;
+    padding:14px;margin-bottom:14px;max-height:360px;overflow-y:auto;
+    box-shadow:inset 0 2px 8px #06384f22;
+  }
+  .chat-msg{display:flex;gap:10px;margin-bottom:12px;animation:slideIn .35s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:none;}}
+  .chat-avatar{
+    flex:0 0 44px;height:44px;border-radius:50%;
+    background:#fff;display:grid;place-items:center;
+    box-shadow:0 4px 10px #06384f22;
+  }
+  .chat-avatar svg{width:34px;height:34px;}
+  .chat-bubble{
+    background:#fff;border-radius:16px 16px 16px 4px;
+    padding:10px 14px;font-size:14.5px;line-height:1.5;
+    box-shadow:0 4px 10px #06384f22;border:2px solid #fff;max-width:85%;
+  }
+  .chat-bubble .sender{font-size:11.5px;color:#2a8fc0;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+  .chat-msg.me{flex-direction:row-reverse;}
+  .chat-msg.me .chat-bubble{background:linear-gradient(180deg,#fffbe6,#ffe9a8);border-radius:16px 16px 4px 16px;}
+  .chat-msg.me .chat-bubble .sender{color:#c75e00;}
+
+  .reply-options{display:grid;gap:12px;}
+  .reply{
+    display:flex;gap:12px;align-items:center;
+    background:linear-gradient(180deg,#e6fbff,#c3f0ff);
+    border:3px solid #fff;border-radius:16px;padding:12px 14px;
+    cursor:pointer;font-size:14.5px;line-height:1.45;color:#0a3a52;
+    transition:.18s;position:relative;
+    box-shadow:0 8px 18px #06384f22;
+  }
+  .reply:hover:not(.locked){transform:translateY(-2px);background:linear-gradient(180deg,#fffbe6,#ffe9a8);box-shadow:0 12px 22px #06384f33;}
+  .reply.locked{pointer-events:none;}
+  .reply.correct{background:linear-gradient(180deg,#d6ffe6,#8cf0b5);border-color:var(--correct);box-shadow:0 0 0 4px #2fbf7144;}
+  .reply.wrong{background:linear-gradient(180deg,#ffd6de,#ff9fb0);border-color:var(--wrong);box-shadow:0 0 0 4px #ff4d6d44;}
+  .reply .emoji{flex:0 0 40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:20px;}
+
+  /* ============ МИНИ-ИГРА 4 — ПАЗЛ ============ */
+  .puzzle-wrap{margin-bottom:14px;}
+  .questions-col{
+    display:grid;gap:10px;margin-bottom:18px;
+  }
+  .question-card{
+    background:linear-gradient(180deg,#e6fbff,#c3f0ff);
+    border:3px solid #fff;border-radius:14px;padding:12px 14px;
+    cursor:pointer;font-size:14.5px;line-height:1.45;color:#0a3a52;
+    box-shadow:0 8px 18px #06384f22;transition:.18s;
+    display:flex;align-items:center;gap:12px;
+    position:relative;
+  }
+  .question-card:hover:not(.matched):not(.active){
+    transform:translateY(-2px);
+    background:linear-gradient(180deg,#fffbe6,#ffe9a8);
+  }
+  .question-card.active{
+    border-color:#ffb703;
+    background:linear-gradient(180deg,#fff3c4,#ffe08a);
+    box-shadow:0 0 0 4px #ffb70355, 0 12px 22px #06384f33;
+  }
+  .question-card.matched{
+    background:linear-gradient(180deg,#d6ffe6,#a8f5c9);
+    border-color:var(--correct);
+    opacity:.7;
+    pointer-events:none;
+    text-decoration:line-through;
+  }
+  .question-card.matched::after{
+    content:'✓';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    font-size:20px;color:var(--correct);font-weight:900;
+  }
+  .question-card .q-icon{
+    flex:0 0 36px;height:36px;border-radius:50%;
+    background:#fff;display:grid;place-items:center;font-size:18px;
+    box-shadow:0 3px 8px #06384f22;
+  }
+
+  .puzzle-board{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    background:linear-gradient(180deg,#a8ecff,#1e9fe0);
+    padding:14px;border-radius:16px;
+    border:3px solid #fff;
+    box-shadow:inset 0 -20px 40px #0b5a8a55, 0 10px 24px #06384f22;
+  }
+  .puzzle-piece{
+    aspect-ratio:1/1;
+    perspective:800px;
+    cursor:pointer;
+    transition:transform .18s;
+  }
+  .puzzle-piece:hover:not(.flipped){
+    transform:translateY(-3px) scale(1.03);
+  }
+  .puzzle-piece .inner{
+    position:relative;width:100%;height:100%;
+    transform-style:preserve-3d;
+    transition:transform .8s cubic-bezier(.4,.2,.2,1);
+    border-radius:12px;
+  }
+  .puzzle-piece.flipped .inner{
+    transform:rotateY(180deg);
+  }
+  .puzzle-piece .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;
+    border-radius:12px;
+    display:grid;place-items:center;
+    padding:6px;
+    text-align:center;
+    border:3px solid #fff;
+    box-shadow:0 6px 14px #06384f33;
+    overflow:hidden;
+  }
+  .puzzle-piece .front{
+    background:linear-gradient(135deg,#ffe066,#ffb703);
+    color:#7a3d00;
+    font-weight:800;
+    font-size:13px;
+    line-height:1.25;
+    word-break:break-word;
+    padding:8px 6px;
+  }
+  .puzzle-piece .front .num{
+    position:absolute;top:4px;left:6px;
+    width:20px;height:20px;border-radius:50%;
+    background:#fff;color:#ff7a00;
+    display:grid;place-items:center;font-size:11px;font-weight:900;
+  }
+  .puzzle-piece .back{
+    transform:rotateY(180deg);
+    background:#fff;
+    padding:0;
+    overflow:hidden;
+  }
+  .puzzle-piece .back svg{width:100%;height:100%;display:block;}
+  .puzzle-piece.wrong-shake{animation:wrongShake .5s;}
+  @keyframes wrongShake{
+    0%,100%{transform:translateX(0) rotate(0);}
+    20%{transform:translateX(-6px) rotate(-3deg);}
+    40%{transform:translateX(6px) rotate(3deg);}
+    60%{transform:translateX(-5px) rotate(-2deg);}
+    80%{transform:translateX(5px) rotate(2deg);}
+  }
+  .puzzle-status{
+    margin-top:12px;
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:10px;
+    background:#ffffffee;border:2px solid #fff;border-radius:12px;
+    padding:10px 14px;font-size:14px;font-weight:700;
+    box-shadow:0 6px 14px #06384f22;
+  }
+  .puzzle-status .prog{color:var(--orange);}
+
+  .confetti{
+    position:fixed;inset:0;pointer-events:none;z-index:999;
+  }
+  .confetti span{
+    position:absolute;top:-20px;
+    font-size:24px;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    0%{transform:translateY(0) rotate(0);opacity:1;}
+    100%{transform:translateY(110vh) rotate(720deg);opacity:0;}
+  }
+
+  /* ============ ФИНАЛ ============ */
+  .final{text-align:center;padding:6px 0;}
+  .final .big{font-size:70px;margin-bottom:6px;animation:bob 2.4s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  .scorebox{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:22px 0;}
+  .scorebox .item{background:linear-gradient(180deg,#e6fbff,#c3f0ff);border:3px solid #fff;border-radius:16px;padding:14px 22px;min-width:130px;box-shadow:0 10px 22px #06384f22;}
+  .scorebox .item b{display:block;font-size:26px;color:var(--orange);}
+  .scorebox .item span{font-size:12.5px;color:#2a5a70;font-weight:700;}
+
+  .tips{background:linear-gradient(180deg,#fffbe6,#ffe9a8);border:3px solid #fff;border-radius:16px;padding:18px 22px;margin:16px 0;line-height:1.7;font-size:14.5px;color:#4a3a00;box-shadow:0 12px 24px #06384f22;}
+  .tips h3{margin:0 0 10px;font-size:17px;color:#c75e00;}
+  .tips ul{margin:0;padding-left:22px;}
+  .tips li{margin-bottom:8px;}
+
+  .hidden{display:none !important;}
+
+  @media(max-width:600px){
+    .card{padding:16px 12px;}
+    .brand h1{font-size:15px;}
+    .brand p{font-size:11px;}
+    h2{font-size:18px;}
+    .pill{padding:5px 10px;font-size:11.5px;}
+    .tab{padding:8px 12px;font-size:12px;}
+    .option{font-size:13.5px;padding:10px 12px;}
+    .option .fish-icon{flex-basis:42px;height:42px;}
+    .option .fish-icon svg{width:32px;height:32px;}
+    .option .letter{flex-basis:24px;height:24px;font-size:11.5px;}
+    .fish-pond{height:400px;}
+    .pond-fish .pwd-label{font-size:10.5px;padding:2px 6px;}
+    .chat-bubble{font-size:13px;max-width:92%;}
+    .reply{font-size:13.5px;}
+    .puzzle-board{grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;}
+    .puzzle-piece .front{font-size:11px;padding:6px 4px;}
+    .question-card{font-size:13px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bubbles" id="bubbles"></div>
+
+<div class="seabed">
+  <svg viewBox="0 0 1200 150" preserveAspectRatio="none">
+    <path d="M0,85 C180,45 380,115 600,85 C820,55 1020,115 1200,75 L1200,150 L0,150 Z" fill="#f4d58d"/>
+    <path d="M0,105 C200,75 400,135 620,105 C840,75 1040,135 1200,100 L1200,150 L0,150 Z" fill="#e0b76b"/>
+    <g fill="#2a9a63">
+      <path d="M80,150 C60,110 110,90 90,50 C120,80 80,100 110,150 Z"/>
+      <path d="M140,150 C120,110 170,90 150,40 C185,80 140,100 170,150 Z"/>
+      <path d="M1060,150 C1040,110 1090,90 1070,50 C1100,80 1060,100 1090,150 Z"/>
+      <path d="M1130,150 C1110,110 1160,90 1140,40 C1175,80 1130,100 1160,150 Z"/>
+    </g>
+    <g fill="#3fbf7f">
+      <path d="M110,150 C95,120 135,105 120,70 C150,95 115,110 140,150 Z"/>
+      <path d="M1090,150 C1075,120 1115,105 1100,70 C1130,95 1095,110 1120,150 Z"/>
+    </g>
+    <circle cx="220" cy="140" r="14" fill="#ff7a9c"/>
+    <circle cx="244" cy="144" r="10" fill="#ff5c85"/>
+    <circle cx="960" cy="140" r="12" fill="#ff7a9c"/>
+    <circle cx="984" cy="144" r="8" fill="#ff5c85"/>
+    <circle cx="400" cy="142" r="7" fill="#c3f0ff"/>
+    <circle cx="700" cy="142" r="6" fill="#c3f0ff"/>
+    <circle cx="820" cy="144" r="5" fill="#ffffff"/>
+  </svg>
+</div>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">🐠</div>
+      <div>
+        <h1>Аквариум Безопасности</h1>
+        <p>Веб-квест из четырёх мини-игр</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="pill">⭐ Очки: <b id="score">0</b></div>
+      <div class="pill" id="livesPill">❤️❤️❤️</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="quiz" onclick="switchTab('quiz')">
+      <div class="dot"></div>🐟 Викторина
+    </div>
+    <div class="tab" data-tab="fishing" onclick="switchTab('fishing')">
+      <div class="dot"></div>🎣 Рыбалка
+    </div>
+    <div class="tab" data-tab="chat" onclick="switchTab('chat')">
+      <div class="dot"></div>💬 Общение
+    </div>
+    <div class="tab" data-tab="puzzle" onclick="switchTab('puzzle')">
+      <div class="dot"></div>🧩 Пазл
+    </div>
+    <div class="tab" data-tab="final" id="finalTab" onclick="switchTab('final')">
+      <div class="dot"></div>🏆 Финал
+    </div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+  <!-- ============================================================
+       МИНИ-ИГРА 1 — ВИКТОРИНА
+       ============================================================ -->
+  <div class="card" id="quizScreen">
+    <div class="badge" id="quizBadge">Рыбка 1 · Викторина</div>
+    <h2 id="quizTitle"></h2>
+    <p class="lead" id="quizLead"></p>
+
+    <div class="scene" id="quizScene"></div>
+
+    <div class="options" id="quizOptions"></div>
+    <div class="feedback" id="quizFeedback"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="quizNextBtn" onclick="quizSubmit()" disabled>Поймать ответ 🎣</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       МИНИ-ИГРА 2 — РЫБАЛКА НА ПАРОЛИ
+       ============================================================ -->
+  <div class="card hidden" id="fishingScreen">
+    <div class="badge">Игра 2 · Рыбалка на пароли</div>
+    <h2>🎣 Поймай небезопасные пароли!</h2>
+    <p class="lead" id="fishingLead">Нажимай на рыбок с <b>НЕБЕЗОПАСНЫМИ</b> паролями, чтобы выловить их. Безопасные рыбки должны остаться в воде!</p>
+
+    <div class="fish-pond" id="fishPond">
+      <div class="pond-hud">
+        <div class="hud-chip">Раунд <b id="pondRound">1</b>/<b id="pondRoundsTotal">4</b></div>
+        <div class="hud-chip">Поймано: <b id="pondCaught">0</b>/<b id="pondTotal">0</b></div>
+        <div class="hud-chip">Ошибки: <b id="pondMistakes">0</b></div>
+      </div>
+      <div class="hook-cursor" id="hookCursor">🪝</div>
+    </div>
+
+    <div class="feedback" id="fishingFeedback"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="fishingNextBtn" onclick="fishingNextRound()" disabled>Следующий раунд →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       МИНИ-ИГРА 3 — ЦИФРОВАЯ ГИГИЕНА ОБЩЕНИЯ
+       ============================================================ -->
+  <div class="card hidden" id="chatScreen">
+    <div class="badge" id="chatBadge">Игра 3 · Общение</div>
+    <h2 id="chatTitle"></h2>
+    <p class="lead" id="chatLead"></p>
+
+    <div class="chat-box" id="chatBox"></div>
+
+    <div class="reply-options" id="chatOptions"></div>
+    <div class="feedback" id="chatFeedback"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="chatNextBtn" onclick="chatSubmit()" disabled>Ответить 🐠</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       МИНИ-ИГРА 4 — ПАЗЛ
+       ============================================================ -->
+  <div class="card hidden" id="puzzleScreen">
+    <div class="badge">Игра 4 · Пазл-картинка</div>
+    <h2>🧩 Соедини понятия и ответы</h2>
+    <p class="lead">
+      Сверху — определения из мира интернет-безопасности. Снизу — детали пазла с ответами.
+      Нажми на <b>определение</b>, затем на <b>деталь</b> с верным ответом. Каждый правильный ответ
+      переворачивает деталь и открывает часть картинки. Собери все 8 — и увидишь сокровище аквариума!
+    </p>
+
+    <div class="puzzle-wrap">
+      <div class="questions-col" id="puzzleQuestions"></div>
+      <div class="puzzle-board" id="puzzleBoard"></div>
+      <div class="puzzle-status">
+        <div>Собрано: <span class="prog" id="puzzleProgress">0 / 8</span></div>
+        <div>Ошибки: <span class="prog" id="puzzleMistakes">0</span></div>
+      </div>
+    </div>
+
+    <div class="feedback" id="puzzleFeedback"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="puzzleNextBtn" onclick="puzzleFinish()" disabled>Завершить игру ✓</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ФИНАЛ
+       ============================================================ -->
+  <div class="card hidden" id="finalScreen">
+    <div class="final">
+      <div class="big" id="finalEmoji">🏆</div>
+      <h2 id="finalTitle">Квест пройден!</h2>
+      <p class="lead" id="finalLead"></p>
+    </div>
+
+    <div class="scorebox">
+      <div class="item"><b id="finalScore">0</b><span>всего очков</span></div>
+      <div class="item"><b id="finalQuiz">0</b><span>викторина</span></div>
+      <div class="item"><b id="finalFishing">0</b><span>рыбалка</span></div>
+      <div class="item"><b id="finalChat">0</b><span>общение</span></div>
+      <div class="item"><b id="finalPuzzle">0</b><span>пазл</span></div>
+    </div>
+
+    <div class="tips">
+      <h3>🪝 Памятка: как не попасться на крючок</h3>
+      <ul>
+        <li>Никому не сообщай пароли, коды из СМС и данные карт — даже «сотрудникам банка».</li>
+        <li>Проверяй адрес сайта и отправителя перед вводом любых данных.</li>
+        <li>Пароль должен быть длинным (12+ символов) и уникальным для каждого сайта.</li>
+        <li>Не используй даты рождения, клички, «qwerty» и простые слова.</li>
+        <li>Включай двухфакторную аутентификацию везде, где можно.</li>
+        <li>Не переходи по ссылкам из подозрительных писем — заходи на сайт вручную.</li>
+        <li>Не публикуй адрес, школу, телефон и геометки в открытом доступе.</li>
+        <li>«Лёгких денег» не бывает: обещания быстрого заработка — почти всегда обман.</li>
+        <li>Общайся в сети уважительно. Травля — это не шутка.</li>
+        <li>Столкнулся с мошенничеством или травлей — расскажи взрослым и сообщи в поддержку.</li>
+      </ul>
+    </div>
+
+    <div class="actions" style="justify-content:center;">
+      <button class="btn-primary" onclick="restartAll()">Пройти заново 🌊</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   ОБЩИЕ ДАННЫЕ
+   ============================================================ */
+const FISH_SVGS = [
+  `<svg viewBox="0 0 60 60"><ellipse cx="28" cy="30" rx="20" ry="15" fill="#ffb703"/><path d="M46,30 L58,18 L54,30 L58,42 Z" fill="#ff7a00"/><circle cx="20" cy="26" r="3" fill="#0a3a52"/><circle cx="21" cy="25" r="1" fill="#fff"/><path d="M12,30 Q17,36 12,42" stroke="#ff7a00" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 60 60"><ellipse cx="28" cy="30" rx="20" ry="15" fill="#5aa9ff"/><path d="M46,30 L58,18 L54,30 L58,42 Z" fill="#2a7fd6"/><circle cx="20" cy="26" r="3" fill="#0a3a52"/><circle cx="21" cy="25" r="1" fill="#fff"/><path d="M12,30 Q17,36 12,42" stroke="#2a7fd6" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 60 60"><ellipse cx="28" cy="30" rx="20" ry="15" fill="#ff8fab"/><path d="M46,30 L58,18 L54,30 L58,42 Z" fill="#ff5c85"/><circle cx="20" cy="26" r="3" fill="#0a3a52"/><circle cx="21" cy="25" r="1" fill="#fff"/><path d="M12,30 Q17,36 12,42" stroke="#ff5c85" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 60 60"><ellipse cx="28" cy="30" rx="20" ry="15" fill="#3fbf7f"/><path d="M46,30 L58,18 L54,30 L58,42 Z" fill="#2a9a63"/><circle cx="20" cy="26" r="3" fill="#0a3a52"/><circle cx="21" cy="25" r="1" fill="#fff"/><path d="M12,30 Q17,36 12,42" stroke="#2a9a63" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+];
+const WISE_FISH = FISH_SVGS[0];
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   ГЛОБАЛЬНОЕ СОСТОЯНИЕ
+   ============================================================ */
+const STATE = {
+  totalScore: 0,
+  lives: 3,
+  quizScore: 0,
+  fishingScore: 0,
+  chatScore: 0,
+  puzzleScore: 0,
+  quizDone: false,
+  fishingDone: false,
+  chatDone: false,
+  puzzleDone: false,
+  activeTab: 'quiz'
+};
+
+/* ============================================================
+   ПУЗЫРЬКИ
+   ============================================================ */
+(function makeBubbles(){
+  const wrap = $('bubbles');
+  for(let i=0;i<22;i++){
+    const b = document.createElement('div');
+    b.className='bubble';
+    const size = 10 + Math.random()*34;
+    b.style.width = size+'px';
+    b.style.height = size+'px';
+    b.style.left = Math.random()*100 + '%';
+    b.style.animationDuration = (10 + Math.random()*14) + 's';
+    b.style.animationDelay = (Math.random()*12) + 's';
+    wrap.appendChild(b);
+  }
+})();
+
+/* ============================================================
+   ВЕРХНЯЯ ПАНЕЛЬ И ВКЛАДКИ
+   ============================================================ */
+function updateTop(){
+  $('score').textContent = STATE.totalScore;
+  $('livesPill').textContent = '❤️'.repeat(Math.max(0,STATE.lives)) + '🖤'.repeat(Math.max(0,3-STATE.lives));
+  document.querySelectorAll('.tab').forEach(t => {
+    const name = t.dataset.tab;
+    if(name === 'final') return;
+    t.classList.toggle('active', name === STATE.activeTab);
+    t.classList.toggle('done', STATE[name + 'Done'] === true);
+  });
+  // Активность финальной вкладки
+  const finalTab = document.querySelector('.tab[data-tab="final"]');
+  if(finalTab){
+    finalTab.classList.toggle('active', STATE.activeTab === 'final');
+    finalTab.classList.toggle('done', allGamesDone());
+  }
+}
+
+function allGamesDone(){
+  return STATE.quizDone && STATE.fishingDone && STATE.chatDone && STATE.puzzleDone;
+}
+
+function switchTab(tab){
+  // Финальная вкладка открывается только если все игры пройдены
+  if(tab === 'final'){
+    if(!allGamesDone()){
+      // Всё равно откроем финал, но покажем актуальные очки
+      // (пользователь мог кликнуть вручную)
+    }
+    showFinal();
+    STATE.activeTab = 'final';
+    $('progressBar').style.width = '100%';
+    updateTop();
+    window.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
+
+  STATE.activeTab = tab;
+  ['quiz','fishing','chat','puzzle','final'].forEach(t => {
+    const el = $(t+'Screen');
+    if(el) el.classList.add('hidden');
+  });
+  const target = $(tab+'Screen');
+  if(target) target.classList.remove('hidden');
+  $('progressBar').style.width = progressPercent() + '%';
+  updateTop();
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  if(tab === 'fishing' && !fishingState.started) startFishingGame();
+  if(tab === 'chat' && !chatState.started) startChatGame();
+  if(tab === 'puzzle' && !puzzleState.started) startPuzzleGame();
+}
+
+function progressPercent(){
+  let done = 0;
+  if(STATE.quizDone) done += 25;
+  if(STATE.fishingDone) done += 25;
+  if(STATE.chatDone) done += 25;
+  if(STATE.puzzleDone) done += 25;
+  return done;
+}
+
+/* ============================================================
+   МИНИ-ИГРА 1 — ВИКТОРИНА
+   ============================================================ */
+const QUIZ_TASKS = [
+  {
+    badge:"Рыбка 1 · Фишинг",
+    title:"Письмо от «банка»",
+    lead:"В аквариум приплыло подозрительное письмо. Что делать?",
+    scenario:[
+      {who:"📧 Отправитель: security@bank-online-help.ru", text:"Уважаемый клиент! Обнаружена подозрительная активность. Срочно перейдите по ссылке и подтвердите данные карты."},
+      {who:"🔗 Ссылка в письме", text:"http://bank-online-help.ru/verify?user=7821"}
+    ],
+    options:[
+      "Перейти по ссылке и ввести данные карты — вдруг это важно",
+      "Не переходить, а позвонить в банк по номеру с официального сайта или с карты",
+      "Ответить на письмо и попросить официальный бланк",
+      "Переслать письмо друзьям и удалить"
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Домен bank-online-help.ru — не банк, а срочность — приём мошенников. Банк не просит данные карты по ссылке из письма.",
+    bad:"<b>Тебя поймали на крючок!</b> 🪝 Это фишинг: поддельный домен и давление срочностью. Позвони в банк по официальному номеру."
+  },
+  {
+    badge:"Рыбка 2 · Телефонный обман",
+    title:"Звонок «из банка»",
+    lead:"Неизвестный номер. Ответишь?",
+    scenario:[
+      {who:"📞 Неизвестный номер", text:"Здравствуйте! С вашей карты пытаются списать 15 000 ₽. Продиктуйте код из СМС, чтобы отменить операцию."}
+    ],
+    options:[
+      "Продиктовать код — это же служба безопасности банка",
+      "Сказать, что код не пришёл, и попросить перезвонить",
+      "Положить трубку и самому позвонить в банк по официальному номеру",
+      "Назвать номер карты и код, но не говорить пароль от приложения"
+    ],
+    correct:2,
+    good:"<b>Верно!</b> 🐟 Настоящий сотрудник банка никогда не спрашивает код из СМС. Перезвони в банк по официальному номеру.",
+    bad:"<b>Тебя поймали на крючок!</b> 🪝 Код из СМС — ключ к деньгам. Сотрудники банка его не спрашивают. Положи трубку и перезвони в банк сам."
+  },
+  {
+    badge:"Рыбка 3 · Фейковый выигрыш",
+    title:"«Вы выиграли iPhone!»",
+    lead:"Незнакомец поздравляет с призом.",
+    scenario:[
+      {who:"💬 Незнакомый аккаунт", text:"Поздравляем! Вы победили в розыгрыше iPhone 15! Оплатите доставку 490 ₽ по ссылке и укажите данные карты."},
+      {who:"🔗 Ссылка", text:"https://priz-iphone-win.site/claim"}
+    ],
+    options:[
+      "Оплатить 490 ₽ — сумма небольшая, а приз дорогой",
+      "Проигнорировать и не переходить по ссылке: я не участвовал в розыгрыше",
+      "Перейти по ссылке, но карту не вводить, только посмотреть",
+      "Спросить скриншот документов лотереи и потом оплатить"
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 «Выигрыш + оплата доставки» — классика мошенничества. Ты не участвовал в розыгрыше — приза нет.",
+    bad:"<b>Тебя поймали на крючок!</b> 🪝 «Оплата доставки приза» — приманка для ввода данных карты. Приза не существует."
+  },
+  {
+    badge:"Рыбка 4 · Приватность",
+    title:"Что публиковать?",
+    lead:"Что безопаснее выложить в открытом профиле?",
+    scenario:[
+      {who:"📱 Публикация", text:"Что из перечисленного безопаснее опубликовать в открытом профиле?"}
+    ],
+    options:[
+      "Фото с геометкой «школа №15, мой класс» и расписанием",
+      "Селфи на фоне дома с видимым номером квартиры",
+      "Фото питомца без адреса, геолокации и личных данных",
+      "Фото билета на самолёт с полным именем и номером рейса"
+    ],
+    correct:2,
+    good:"<b>Верно!</b> 🐟 Безопасная публикация не содержит адреса, геолокации и документов.",
+    bad:"<b>Тебя поймали на крючок!</b> 🪝 Геометки и билеты раскрывают, где ты живёшь и когда тебя нет дома."
+  },
+  {
+    badge:"Рыбка 5 · Лёгкие деньги",
+    title:"«Быстрый заработок»",
+    lead:"Незнакомец предлагает доход в мессенджере.",
+    scenario:[
+      {who:"💰 Сообщение", text:"Привет! Зарабатывай 5000 ₽ в день! Переведи 1000 ₽ для активации бонуса — получишь 5000 ₽. Всё честно!"}
+    ],
+    options:[
+      "Перевести 1000 ₽ — вернуть обещают в пять раз больше",
+      "Спросить отзывы и, если хорошие, перевести",
+      "Игнорировать и заблокировать: просьба заплатить, чтобы заработать — признак мошенничества",
+      "Перевести половину суммы, чтобы проверить схему"
+    ],
+    correct:2,
+    good:"<b>Верно!</b> 🐟 «Заплати, чтобы получить больше» — классическая схема. Настоящий заработок не требует взносов.",
+    bad:"<b>Тебя поймали на крючок!</b> 🪝 Просьба перевести деньги «для бонуса» — приманка. Деньги не вернут."
+  }
+];
+
+let quizState = {current:0, selected:null, answered:false};
+
+function renderQuizTask(){
+  const t = QUIZ_TASKS[quizState.current];
+  quizState.selected = null;
+  quizState.answered = false;
+
+  $('quizBadge').textContent = t.badge;
+  $('quizTitle').textContent = t.title;
+  $('quizLead').textContent = t.lead;
+
+  const sc = $('quizScene');
+  sc.innerHTML = '';
+  t.scenario.forEach((m, idx) => {
+    if(idx === 0){
+      const row = document.createElement('div');
+      row.className = 'fish-row';
+      row.innerHTML = `<div class="fish-big">${WISE_FISH}</div>
+        <div class="msg-box"><div class="who">${m.who}</div>${m.text}</div>`;
+      sc.appendChild(row);
+    } else {
+      const box = document.createElement('div');
+      box.className = 'msg-box';
+      box.innerHTML = `<div class="who">${m.who}</div>${m.text}`;
+      sc.appendChild(box);
+    }
+  });
+
+  const opts = $('quizOptions');
+  opts.innerHTML = '';
+  t.options.forEach((text, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `
+      <div class="fish-icon">${FISH_SVGS[i % FISH_SVGS.length]}</div>
+      <div class="letter">${String.fromCharCode(65+i)}</div>
+      <div class="text">${text}</div>`;
+    div.onclick = () => quizSelect(i, div);
+    opts.appendChild(div);
+  });
+
+  const fb = $('quizFeedback');
+  fb.className = 'feedback';
+  fb.innerHTML = '';
+
+  const btn = $('quizNextBtn');
+  btn.disabled = true;
+  btn.textContent = 'Поймать ответ 🎣';
+  btn.onclick = quizSubmit;
+}
+
+function quizSelect(i, el){
+  if(quizState.answered) return;
+  quizState.selected = i;
+  document.querySelectorAll('#quizOptions .option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  $('quizNextBtn').disabled = false;
+}
+
+function quizSubmit(){
+  if(quizState.answered || quizState.selected === null) return;
+  quizState.answered = true;
+  const t = QUIZ_TASKS[quizState.current];
+  const isCorrect = quizState.selected === t.correct;
+
+  document.querySelectorAll('#quizOptions .option').forEach((o, i) => {
+    o.classList.add('locked');
+    o.classList.remove('selected');
+    if(i === t.correct) o.classList.add('correct');
+    else if(i === quizState.selected) o.classList.add('wrong');
+  });
+
+  const fb = $('quizFeedback');
+  if(isCorrect){
+    STATE.quizScore += 10;
+    STATE.totalScore += 10;
+    fb.className = 'feedback show good';
+    fb.innerHTML = t.good;
+  } else {
+    STATE.lives = Math.max(0, STATE.lives - 1);
+    fb.className = 'feedback show bad';
+    fb.innerHTML = t.bad;
+  }
+  updateTop();
+
+  const btn = $('quizNextBtn');
+  if(quizState.current === QUIZ_TASKS.length - 1){
+    btn.textContent = 'Завершить викторину ✓';
+    btn.onclick = () => {
+      STATE.quizDone = true;
+      updateTop();
+      switchTab('fishing');
+    };
+  } else {
+    btn.textContent = 'Плыть дальше →';
+    btn.onclick = () => {
+      quizState.current++;
+      renderQuizTask();
+      window.scrollTo({top:0, behavior:'smooth'});
+    };
+  }
+}
+
+/* ============================================================
+   МИНИ-ИГРА 2 — РЫБАЛКА НА ПАРОЛИ
+   ============================================================ */
+const FISHING_ROUNDS = [
+  {
+    total:5,
+    passwords:[
+      {pwd:"123456", safe:false},
+      {pwd:"qwerty", safe:false},
+      {pwd:"K9#mP!xQ2vLz", safe:true},
+      {pwd:"password", safe:false},
+      {pwd:"Tr0ub4dor&3#Horse", safe:true}
+    ]
+  },
+  {
+    total:6,
+    passwords:[
+      {pwd:"МойКот2010", safe:false},
+      {pwd:"F!r3#Fr0g$S7", safe:true},
+      {pwd:"Ivan2009", safe:false},
+      {pwd:"AnNa_1999", safe:false},
+      {pwd:"bLue^Sky!42R", safe:true},
+      {pwd:"iloveyou", safe:false}
+    ]
+  },
+  {
+    total:7,
+    passwords:[
+      {pwd:"Pa$$w0rd_123", safe:false},
+      {pwd:"X7k!mQ9@pL2v#R4", safe:true},
+      {pwd:"School2015", safe:false},
+      {pwd:"C0rrect&Horse!9", safe:true},
+      {pwd:"football99", safe:false},
+      {pwd:"gKr8!zW#sN4&qL6", safe:true},
+      {pwd:"Lera_2008", safe:false}
+    ]
+  },
+  {
+    total:8,
+    passwords:[
+      {pwd:"Adm1n!2024#", safe:false},
+      {pwd:"tQ7$mZ@9vX#L2kP&", safe:true},
+      {pwd:"Moscow1990", safe:false},
+      {pwd:"R3d^Sky_4Bright!", safe:true},
+      {pwd:"QwErTy!2023", safe:false},
+      {pwd:"dF5!nR8#cT2$wB6&", safe:true},
+      {pwd:"love2010forever", safe:false},
+      {pwd:"Y!h7@Vq3$Pz9&Kw", safe:true}
+    ]
+  }
+];
+
+let fishingState = {
+  started:false, round:0, caught:0, total:0, mistakes:0, roundScore:0, moveHandler:null
+};
+
+function startFishingGame(){
+  fishingState = {started:true, round:0, caught:0, total:0, mistakes:0, roundScore:0, moveHandler:null};
+  startFishingRound();
+}
+
+function startFishingRound(){
+  const round = FISHING_ROUNDS[fishingState.round];
+  fishingState.caught = 0;
+  fishingState.total = round.passwords.filter(p => !p.safe).length;
+  fishingState.mistakes = 0;
+
+  $('pondRound').textContent = fishingState.round + 1;
+  $('pondRoundsTotal').textContent = FISHING_ROUNDS.length;
+  $('pondCaught').textContent = 0;
+  $('pondTotal').textContent = fishingState.total;
+  $('pondMistakes').textContent = 0;
+  $('fishingFeedback').className = 'feedback';
+
+  $('fishingLead').innerHTML = fishingState.round === 0
+    ? 'Нажимай на рыбок с <b>НЕБЕЗОПАСНЫМИ</b> паролями, чтобы выловить их. Безопасные рыбки должны остаться в воде!'
+    : `Раунд <b>${fishingState.round+1}</b>. Пароли сложнее и хитрее. Лови только <b>НЕБЕЗОПАСНЫЕ</b>!`;
+
+  const btn = $('fishingNextBtn');
+  btn.disabled = true;
+  btn.textContent = 'Следующий раунд →';
+  btn.onclick = fishingNextRound;
+
+  const pond = $('fishPond');
+  pond.querySelectorAll('.pond-fish').forEach(f => f.remove());
+
+  const passwords = [...round.passwords];
+  for(let i = passwords.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [passwords[i], passwords[j]] = [passwords[j], passwords[i]];
+  }
+
+  const cols = passwords.length <= 5 ? 3 : 4;
+  const rows = Math.ceil(passwords.length / cols);
+
+  passwords.forEach((item, idx) => {
+    const fish = document.createElement('div');
+    fish.className = 'pond-fish';
+    fish.dataset.safe = item.safe ? '1' : '0';
+
+    const color = Math.floor(Math.random() * FISH_SVGS.length);
+    fish.innerHTML = `
+      <div class="fish-shape">${FISH_SVGS[color]}</div>
+      <div class="pwd-label">${item.pwd}</div>`;
+
+    const cellW = 100 / cols;
+    const cellH = 100 / rows;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const leftPct = col * cellW + Math.random() * (cellW * 0.25) + 4;
+    const topPct  = row * cellH + Math.random() * (cellH * 0.2) + 12;
+
+    fish.style.left = leftPct + '%';
+    fish.style.top = topPct + '%';
+    fish.style.animationDuration = (3 + Math.random() * 3) + 's';
+    fish.style.animationDelay = (Math.random() * 2) + 's';
+
+    fish.onclick = (e) => {
+      e.stopPropagation();
+      handleFishClick(fish, item);
+    };
+
+    pond.appendChild(fish);
+  });
+
+  const hook = $('hookCursor');
+  hook.classList.add('show');
+  if(fishingState.moveHandler){
+    pond.removeEventListener('mousemove', fishingState.moveHandler);
+  }
+  fishingState.moveHandler = (e) => {
+    const r = pond.getBoundingClientRect();
+    hook.style.left = (e.clientX - r.left) + 'px';
+    hook.style.top  = (e.clientY - r.top) + 'px';
+  };
+  pond.addEventListener('mousemove', fishingState.moveHandler);
+}
+
+function handleFishClick(fish, item){
+  if(fish.classList.contains('caught')) return;
+
+  if(item.safe){
+    fishingState.mistakes++;
+    $('pondMistakes').textContent = fishingState.mistakes;
+    fish.classList.add('safe-click');
+    setTimeout(() => fish.classList.remove('safe-click'), 500);
+    showFishingFeedback(false, `🪝 Это безопасный пароль «${item.pwd}» — его нельзя ловить! Ошибка.`);
+    if(fishingState.mistakes >= 3){
+      endFishingRound(false);
+    }
+  } else {
+    fish.classList.add('caught');
+    fishingState.caught++;
+    $('pondCaught').textContent = fishingState.caught;
+    showFishingFeedback(true, `🐟 Поймал небезопасный пароль «${item.pwd}»! Молодец!`);
+    setTimeout(() => {
+      fish.remove();
+      if(fishingState.caught >= fishingState.total){
+        endFishingRound(true);
+      }
+    }, 700);
+  }
+}
+
+function showFishingFeedback(isGood, msg){
+  const fb = $('fishingFeedback');
+  fb.className = 'feedback show ' + (isGood ? 'good' : 'bad');
+  fb.innerHTML = msg;
+}
+
+function endFishingRound(success){
+  const roundBonus = success ? 20 : 5;
+  STATE.fishingScore += roundBonus;
+  STATE.totalScore += roundBonus;
+
+  if(!success){
+    STATE.lives = Math.max(0, STATE.lives - 1);
+  }
+  updateTop();
+
+  const pond = $('fishPond');
+  $('hookCursor').classList.remove('show');
+  if(fishingState.moveHandler){
+    pond.removeEventListener('mousemove', fishingState.moveHandler);
+    fishingState.moveHandler = null;
+  }
+
+  const btn = $('fishingNextBtn');
+  if(fishingState.round >= FISHING_ROUNDS.length - 1){
+    btn.textContent = 'Завершить рыбалку ✓';
+    btn.onclick = () => {
+      STATE.fishingDone = true;
+      updateTop();
+      switchTab('chat');
+    };
+    if(success){
+      showFishingFeedback(true, `🎉 Отлично! Ты прошёл все раунды рыбалки и заработал +${roundBonus} очков!`);
+    } else {
+      showFishingFeedback(false, `💔 Слишком много ошибок. Раунд завершён. Нажми кнопку, чтобы продолжить.`);
+    }
+  } else {
+    btn.textContent = success ? `Раунд ${fishingState.round+2} →` : 'Дальше →';
+    btn.onclick = () => {
+      fishingState.round++;
+      startFishingRound();
+    };
+  }
+  btn.disabled = false;
+}
+
+function fishingNextRound(){
+  // обработчик переопределяется в endFishingRound
+}
+
+/* ============================================================
+   МИНИ-ИГРА 3 — ОБЩЕНИЕ
+   ============================================================ */
+const CHAT_SCENARIOS = [
+  {
+    title:"Оскорбление в чате",
+    lead:"В классном чате начали травить одноклассника. Как ответить?",
+    messages:[
+      {from:"Вова", icon:"😠", text:"Ха-ха, Петя опять опоздал! Давайте все напишем ему, какой он неудачник!"},
+      {from:"Ты", icon:"🙂", text:"..."}
+    ],
+    replies:[
+      {emoji:"😤", text:"Петя, ты реально неудачник! 😂"},
+      {emoji:"🛡️", text:"Вова, это уже травля. Давайте остановимся. Петя, не слушай их."},
+      {emoji:"😶", text:"(молчать и ничего не писать)"},
+      {emoji:"😈", text:"Вова, давай ещё мемов про Петю!"}
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Ты встал на защиту и остановил травлю. Молчание не останавливает травлю, а участие и ответная агрессия только разжигают конфликт.",
+    bad:"<b>Неверный ответ.</b> 🪝 Травля — это не шутка. Правильная позиция — не участвовать, поддержать человека и остановить обидчиков."
+  },
+  {
+    title:"Незнакомец просит фото",
+    lead:"Незнакомый человек в соцсети просит твоё фото. Что делать?",
+    messages:[
+      {from:"Незнакомец_777", icon:"👤", text:"Привет! Ты классно выглядишь! Скинь своё фото, а то не поверю, что тебе правда 12."},
+      {from:"Ты", icon:"🙂", text:"..."}
+    ],
+    replies:[
+      {emoji:"📸", text:"Ок, сейчас скину своё фото"},
+      {emoji:"🚫", text:"Я не отправляю фото незнакомцам. Если хочешь — спроси у моих родителей."},
+      {emoji:"🤫", text:"Скину, только ты никому не говори"},
+      {emoji:"😏", text:"А ты сначала своё скинь"}
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Личные фото нельзя отправлять незнакомцам. Мошенники могут использовать их против тебя. Если что-то смущает — расскажи родителям.",
+    bad:"<b>Неверный ответ.</b> 🪝 Незнакомцам в интернете нельзя отправлять личные фото. Это может быть опасно."
+  },
+  {
+    title:"«Выиграл приз» от друга",
+    lead:"Друг прислал ссылку с «призом». Что ответить?",
+    messages:[
+      {from:"Друг Артём", icon:"😀", text:"Бро, я выиграл 5000₽! Тебе тоже дадут, если перейдёшь по ссылке и введёшь номер карты! Держи: priz-money-fast.site"},
+      {from:"Ты", icon:"🙂", text:"..."}
+    ],
+    replies:[
+      {emoji:"💳", text:"Круто! Сейчас перейду и введу данные карты"},
+      {emoji:"🤔", text:"Стоп, Артём. Это похоже на мошенничество. Твой аккаунт могли взломать. Позвоню тебе."},
+      {emoji:"🔗", text:"Скину ссылку ещё друзьям!"},
+      {emoji:"😐", text:"Просто проигнорирую"}
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Аккаунт друга могли взломать и рассылать фишинг. Данные карты вводить нельзя. Лучше позвонить другу и проверить.",
+    bad:"<b>Неверный ответ.</b> 🪝 Скорее всего, аккаунт друга взломали. Не переходи по ссылке и не вводи данные карты."
+  },
+  {
+    title:"Кибербуллинг в личке",
+    lead:"Незнакомец пишет тебе обидные сообщения. Что делать?",
+    messages:[
+      {from:"Аноним", icon:"👺", text:"Ты такой глупый, всем расскажу, какой ты неудачник! Буду писать каждый день!"},
+      {from:"Ты", icon:"🙂", text:"..."}
+    ],
+    replies:[
+      {emoji:"😡", text:"Сам такой! Буду писать тебе ещё хуже!"},
+      {emoji:"🚫", text:"Не отвечаю на оскорбления. Блокирую тебя и жалуюсь в поддержку. Расскажу родителям."},
+      {emoji:"😢", text:"Ладно, ты прав, я неудачник..."},
+      {emoji:"🤐", text:"Ничего не отвечу и буду терпеть"}
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Лучший ответ на травлю — не отвечать агрессией, заблокировать обидчика, пожаловаться в поддержку и рассказать взрослым. Терпеть в одиночку нельзя.",
+    bad:"<b>Неверный ответ.</b> 🪝 Ответная агрессия усиливает конфликт, а молчаливое терпение не помогает. Нужно заблокировать, пожаловаться и рассказать взрослым."
+  },
+  {
+    title:"Просьба о помощи «от лица мамы»",
+    lead:"«Мама» просит перевести деньги. Что ответить?",
+    messages:[
+      {from:"Мама (номер не сохранён)", icon:"👩", text:"Сынок, срочно переведи 5000₽ на этот номер — у меня проблемы. Потом всё объясню, только никому не говори!"},
+      {from:"Ты", icon:"🙂", text:"..."}
+    ],
+    replies:[
+      {emoji:"💸", text:"Ок, мам, сейчас переведу"},
+      {emoji:"📞", text:"Я позвоню тебе на обычный номер и уточню. Если это правда — помогу. Но сначала проверю."},
+      {emoji:"🤐", text:"Никому не скажу и переведу молча"},
+      {emoji:"😱", text:"Мама, ты ли это?! Скажи кодовое слово"}
+    ],
+    correct:1,
+    good:"<b>Верно!</b> 🐟 Мошенники выдают себя за родных. Нужно позвонить человеку по его обычному номеру и проверить. «Только никому не говори» — приём мошенников.",
+    bad:"<b>Неверный ответ.</b> 🪝 Мошенники часто выдают себя за родственников. Проверь звонком по обычному номеру. Просьба «никому не говорить» — тревожный сигнал."
+  }
+];
+
+let chatState = {started:false, current:0, selected:null, answered:false};
+
+function startChatGame(){
+  chatState = {started:true, current:0, selected:null, answered:false};
+  renderChatScenario();
+}
+
+function renderChatScenario(){
+  const s = CHAT_SCENARIOS[chatState.current];
+  chatState.selected = null;
+  chatState.answered = false;
+
+  $('chatBadge').textContent = `Игра 3 · Общение ${chatState.current+1}/${CHAT_SCENARIOS.length}`;
+  $('chatTitle').textContent = s.title;
+  $('chatLead').textContent = s.lead;
+
+  const box = $('chatBox');
+  box.innerHTML = '';
+  s.messages.forEach((m, idx) => {
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (m.from === 'Ты' ? ' me' : '');
+    div.innerHTML = `
+      <div class="chat-avatar">${FISH_SVGS[idx % FISH_SVGS.length]}</div>
+      <div class="chat-bubble">
+        <div class="sender">${m.icon} ${m.from}</div>
+        ${m.text}
+      </div>`;
+    box.appendChild(div);
+  });
+
+  const opts = $('chatOptions');
+  opts.innerHTML = '';
+  s.replies.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'reply';
+    div.innerHTML = `<div class="emoji">${r.emoji}</div><div>${r.text}</div>`;
+    div.onclick = () => chatSelect(i, div);
+    opts.appendChild(div);
+  });
+
+  const fb = $('chatFeedback');
+  fb.className = 'feedback';
+  fb.innerHTML = '';
+
+  const btn = $('chatNextBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ответить 🐠';
+  btn.onclick = chatSubmit;
+}
+
+function chatSelect(i, el){
+  if(chatState.answered) return;
+  chatState.selected = i;
+  document.querySelectorAll('#chatOptions .reply').forEach(r => {
+    r.classList.remove('selected');
+    r.style.borderColor = '';
+    r.style.background = '';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = '#ffb703';
+  el.style.background = 'linear-gradient(180deg,#fff3c4,#ffe08a)';
+  $('chatNextBtn').disabled = false;
+}
+
+function chatSubmit(){
+  if(chatState.answered || chatState.selected === null) return;
+  chatState.answered = true;
+  const s = CHAT_SCENARIOS[chatState.current];
+  const isCorrect = chatState.selected === s.correct;
+
+  document.querySelectorAll('#chatOptions .reply').forEach((r, i) => {
+    r.classList.add('locked');
+    if(i === s.correct) r.classList.add('correct');
+    else if(i === chatState.selected) r.classList.add('wrong');
+  });
+
+  const fb = $('chatFeedback');
+  if(isCorrect){
+    STATE.chatScore += 15;
+    STATE.totalScore += 15;
+    fb.className = 'feedback show good';
+    fb.innerHTML = s.good;
+  } else {
+    STATE.lives = Math.max(0, STATE.lives - 1);
+    fb.className = 'feedback show bad';
+    fb.innerHTML = s.bad;
+  }
+  updateTop();
+
+  const btn = $('chatNextBtn');
+  if(chatState.current === CHAT_SCENARIOS.length - 1){
+    btn.textContent = 'Завершить общение ✓';
+    btn.onclick = () => {
+      STATE.chatDone = true;
+      updateTop();
+      switchTab('puzzle');
+    };
+  } else {
+    btn.textContent = 'Дальше →';
+    btn.onclick = () => {
+      chatState.current++;
+      renderChatScenario();
+      window.scrollTo({top:0, behavior:'smooth'});
+    };
+  }
+}
+
+/* ============================================================
+   МИНИ-ИГРА 4 — ПАЗЛ
+   ============================================================ */
+// Каждый элемент: определение (сверху) + ответ (на детали пазла)
+const PUZZLE_DATA = [
+  {q:"Вредоносная программа, которая маскируется под полезную и крадёт данные", a:"Троян"},
+  {q:"Обман, при котором мошенники выманивают пароли через поддельные сайты и письма", a:"Фишинг"},
+  {q:"Секретный набор символов для входа в аккаунт", a:"Пароль"},
+  {q:"Дополнительная защита: код из СМС или приложения при входе", a:"2FA"},
+  {q:"Программа, которая блокирует файлы и требует деньги за разблокировку", a:"Вирус-шифровальщик"},
+  {q:"Настройка, которая решает, кто видит твои публикации", a:"Приватность"},
+  {q:"Человек, который взламывает системы для проверки их защиты", a:"Хакер"},
+  {q:"Специальная программа, которая хранит пароли в зашифрованном виде", a:"Менеджер паролей"}
+];
+
+// 8 SVG-фрагментов одной картинки (аквариум с сокровищем).
+// Каждый фрагмент — viewBox вырезки 2x4 или 4x2? Сделаем сетку 4x2 (4 колонки, 2 ряда).
+const PUZZLE_IMAGE_PARTS = (function(){
+  // Общая картинка 400x200, режем на 4x2 = 8 фрагментов по 100x100
+  const parts = [];
+  for(let row = 0; row < 2; row++){
+    for(let col = 0; col < 4; col++){
+      const x = col * 100;
+      const y = row * 100;
+      // SVG с общей сценой, но viewBox обрезан под фрагмент
+      parts.push(`
+        <svg viewBox="${x} ${y} 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="water${x}${y}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7fe0ff"/>
+              <stop offset="100%" stop-color="#0a4d7a"/>
+            </linearGradient>
+            <radialGradient id="sun${x}${y}" cx="50%" cy="20%" r="60%">
+              <stop offset="0%" stop-color="#fff9c4" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#fff9c4" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="400" height="200" fill="url(#water${x}${y})"/>
+          <rect x="0" y="0" width="400" height="200" fill="url(#sun${x}${y})"/>
+
+          <!-- Лучи света -->
+          <g opacity="0.25" fill="#ffffff">
+            <polygon points="40,0 90,0 130,200 80,200"/>
+            <polygon points="180,0 230,0 270,200 220,200"/>
+            <polygon points="320,0 370,0 410,200 360,200"/>
+          </g>
+
+          <!-- Песок -->
+          <path d="M0,160 C60,140 120,175 180,160 C240,145 300,180 360,160 C390,150 400,160 400,160 L400,200 L0,200 Z" fill="#f4d58d"/>
+          <path d="M0,175 C60,160 120,190 180,175 C240,160 300,195 360,175 C390,168 400,175 400,175 L400,200 L0,200 Z" fill="#e0b76b"/>
+
+          <!-- Водоросли -->
+          <g fill="#2a9a63">
+            <path d="M30,200 C15,170 45,155 30,125 C55,148 25,165 50,200 Z"/>
+            <path d="M60,200 C45,170 75,155 60,120 C85,145 55,160 80,200 Z"/>
+            <path d="M340,200 C325,170 355,155 340,125 C365,148 335,165 360,200 Z"/>
+            <path d="M370,200 C355,170 385,155 370,120 C395,145 365,160 390,200 Z"/>
+          </g>
+
+          <!-- Кораллы -->
+          <g fill="#ff7a9c">
+            <circle cx="110" cy="185" r="14"/>
+            <circle cx="130" cy="190" r="10"/>
+            <circle cx="290" cy="185" r="12"/>
+            <circle cx="310" cy="190" r="8"/>
+          </g>
+
+          <!-- Сундук с сокровищами в центре -->
+          <g>
+            <rect x="165" y="140" width="70" height="45" rx="6" fill="#8b5a2b" stroke="#5a3a1a" stroke-width="3"/>
+            <path d="M165,155 Q200,130 235,155 L235,145 Q200,120 165,145 Z" fill="#a86b35" stroke="#5a3a1a" stroke-width="3"/>
+            <rect x="195" y="155" width="12" height="15" rx="2" fill="#ffd166" stroke="#c75e00" stroke-width="2"/>
+            <circle cx="201" cy="163" r="2.5" fill="#5a3a1a"/>
+            <!-- Монеты -->
+            <circle cx="155" cy="180" r="7" fill="#ffd166" stroke="#c75e00" stroke-width="2"/>
+            <circle cx="245" cy="180" r="7" fill="#ffd166" stroke="#c75e00" stroke-width="2"/>
+            <circle cx="250" cy="175" r="6" fill="#ffe066" stroke="#c75e00" stroke-width="2"/>
+            <circle cx="150" cy="175" r="5" fill="#ffe066" stroke="#c75e00" stroke-width="2"/>
+          </g>
+
+          <!-- Пузырьки -->
+          <g fill="#ffffff" opacity="0.7">
+            <circle cx="80" cy="60" r="4"/>
+            <circle cx="90" cy="45" r="3"/>
+            <circle cx="100" cy="30" r="2.5"/>
+            <circle cx="270" cy="70" r="5"/>
+            <circle cx="280" cy="50" r="3.5"/>
+            <circle cx="295" cy="35" r="2"/>
+            <circle cx="200" cy="50" r="3"/>
+            <circle cx="215" cy="30" r="2"/>
+          </g>
+
+          <!-- Золотая рыбка -->
+          <g transform="translate(60,80)">
+            <ellipse cx="0" cy="0" rx="22" ry="16" fill="#ffb703"/>
+            <path d="M20,0 L34,-10 L30,0 L34,10 Z" fill="#ff7a00"/>
+            <circle cx="-8" cy="-4" r="3" fill="#0a3a52"/>
+            <circle cx="-7" cy="-5" r="1" fill="#fff"/>
+            <path d="M-18,0 Q-12,6 -18,12" stroke="#ff7a00" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Розовая рыбка -->
+          <g transform="translate(300,70)">
+            <ellipse cx="0" cy="0" rx="20" ry="14" fill="#ff8fab"/>
+            <path d="M18,0 L30,-8 L27,0 L30,8 Z" fill="#ff5c85"/>
+            <circle cx="-7" cy="-4" r="3" fill="#0a3a52"/>
+            <circle cx="-6" cy="-5" r="1" fill="#fff"/>
+            <path d="M-16,0 Q-10,5 -16,10" stroke="#ff5c85" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Синяя рыбка -->
+          <g transform="translate(140,30)">
+            <ellipse cx="0" cy="0" rx="18" ry="13" fill="#5aa9ff"/>
+            <path d="M16,0 L27,-7 L24,0 L27,7 Z" fill="#2a7fd6"/>
+            <circle cx="-6" cy="-3" r="2.5" fill="#0a3a52"/>
+            <circle cx="-5" cy="-4" r="1" fill="#fff"/>
+          </g>
+        </svg>
+      `);
+    }
+  }
+  return parts;
+})();
+
+let puzzleState = {
+  started:false,
+  selectedQuestion:null,
+  matchedCount:0,
+  mistakes:0,
+  solved:[]  // индексы решённых деталей
+};
+
+function startPuzzleGame(){
+  puzzleState = {started:true, selectedQuestion:null, matchedCount:0, mistakes:0, solved:[]};
+  renderPuzzle();
+}
+
+function renderPuzzle(){
+  const qs = $('puzzleQuestions');
+  qs.innerHTML = '';
+  // Перемешиваем вопросы
+  const order = PUZZLE_DATA.map((_, i) => i);
+  for(let i = order.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  puzzleState.questionOrder = order;
+
+  order.forEach((origIdx) => {
+    const item = PUZZLE_DATA[origIdx];
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.dataset.qid = origIdx;
+    card.innerHTML = `<div class="q-icon">❓</div><div>${item.q}</div>`;
+    card.onclick = () => puzzleSelectQuestion(origIdx, card);
+    qs.appendChild(card);
+  });
+
+  // Доска с деталями пазла — детали содержат ответы, перемешаны
+  const board = $('puzzleBoard');
+  board.innerHTML = '';
+  const pieceOrder = PUZZLE_DATA.map((_, i) => i);
+  for(let i = pieceOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [pieceOrder[i], pieceOrder[j]] = [pieceOrder[j], pieceOrder[i]];
+  }
+  puzzleState.pieceOrder = pieceOrder;
+
+  pieceOrder.forEach((origIdx) => {
+    const item = PUZZLE_DATA[origIdx];
+    const piece = document.createElement('div');
+    piece.className = 'puzzle-piece';
+    piece.dataset.pid = origIdx;
+    piece.innerHTML = `
+      <div class="inner">
+        <div class="face front">
+          <div class="num">${origIdx+1}</div>
+          ${item.a}
+        </div>
+        <div class="face back">${PUZZLE_IMAGE_PARTS[origIdx]}</div>
+      </div>`;
+    piece.onclick = () => puzzleSelectPiece(origIdx, piece);
+    board.appendChild(piece);
+  });
+
+  $('puzzleProgress').textContent = `0 / ${PUZZLE_DATA.length}`;
+  $('puzzleMistakes').textContent = '0';
+  const fb = $('puzzleFeedback');
+  fb.className = 'feedback';
+  fb.innerHTML = '';
+  $('puzzleNextBtn').disabled = true;
+  puzzleState.selectedQuestion = null;
+  puzzleState.matchedCount = 0;
+}
+
+function puzzleSelectQuestion(origIdx, card){
+  if(card.classList.contains('matched')) return;
+  document.querySelectorAll('#puzzleQuestions .question-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  puzzleState.selectedQuestion = origIdx;
+}
+
+function puzzleSelectPiece(pieceOrigIdx, pieceEl){
+  if(pieceEl.classList.contains('flipped')) return;
+  if(puzzleState.selectedQuestion === null){
+    const fb = $('puzzleFeedback');
+    fb.className = 'feedback show bad';
+    fb.innerHTML = 'Сначала выбери <b>определение</b> сверху!';
+    return;
+  }
+
+  if(puzzleState.selectedQuestion === pieceOrigIdx){
+    // Верно — переворачиваем
+    pieceEl.classList.add('flipped');
+    const qCard = document.querySelector(`.question-card[data-qid="${pieceOrigIdx}"]`);
+    if(qCard) qCard.classList.add('matched');
+    puzzleState.matchedCount++;
+    puzzleState.solved.push(pieceOrigIdx);
+    $('puzzleProgress').textContent = `${puzzleState.matchedCount} / ${PUZZLE_DATA.length}`;
+
+    STATE.puzzleScore += 10;
+    STATE.totalScore += 10;
+    updateTop();
+
+    const fb = $('puzzleFeedback');
+    fb.className = 'feedback show good';
+    fb.innerHTML = `🐟 Верно! «${PUZZLE_DATA[pieceOrigIdx].a}» — это ${PUZZLE_DATA[pieceOrigIdx].q.toLowerCase()}. +10 очков!`;
+
+    puzzleState.selectedQuestion = null;
+    document.querySelectorAll('#puzzleQuestions .question-card').forEach(c => c.classList.remove('active'));
+
+    if(puzzleState.matchedCount >= PUZZLE_DATA.length){
+      puzzleComplete();
+    }
+  } else {
+    // Неверно
+    puzzleState.mistakes++;
+    $('puzzleMistakes').textContent = puzzleState.mistakes;
+    pieceEl.classList.add('wrong-shake');
+    setTimeout(() => pieceEl.classList.remove('wrong-shake'), 500);
+    STATE.lives = Math.max(0, STATE.lives - 1);
+    updateTop();
+
+    const fb = $('puzzleFeedback');
+    fb.className = 'feedback show bad';
+    fb.innerHTML = '🪝 Неправильная пара! Попробуй другое определение.';
+  }
+}
+
+function puzzleComplete(){
+  const fb = $('puzzleFeedback');
+  fb.className = 'feedback show good';
+  fb.innerHTML = '🎉 Пазл собран! Ты видишь сокровище аквариума — и теперь знаешь все ключевые понятия интернет-безопасности!';
+  $('puzzleNextBtn').disabled = false;
+
+  const bonus = 20;
+  STATE.puzzleScore += bonus;
+  STATE.totalScore += bonus;
+  updateTop();
+  fireConfetti();
+}
+
+function fireConfetti(){
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  document.body.appendChild(wrap);
+  const emojis = ['🐟','🐠','💎','⭐','🪙','🎉','✨','🐡'];
+  for(let i = 0; i < 60; i++){
+    const span = document.createElement('span');
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    span.style.left = Math.random() * 100 + '%';
+    span.style.animationDuration = (2 + Math.random() * 2) + 's';
+    span.style.animationDelay = (Math.random() * 0.6) + 's';
+    span.style.fontSize = (18 + Math.random() * 18) + 'px';
+    wrap.appendChild(span);
+  }
+  setTimeout(() => wrap.remove(), 5000);
+}
+
+function puzzleFinish(){
+  STATE.puzzleDone = true;
+  updateTop();
+  switchTab('final');
+}
+
+/* ============================================================
+   ФИНАЛ (ИСПРАВЛЕНО)
+   ============================================================ */
+function showFinal(){
+  // Прячем все экраны, показываем финал
+  ['quiz','fishing','chat','puzzle'].forEach(t => {
+    const el = $(t+'Screen');
+    if(el) el.classList.add('hidden');
+  });
+  $('finalScreen').classList.remove('hidden');
+
+  // Всегда актуальные значения
+  $('finalScore').textContent = STATE.totalScore;
+  $('finalQuiz').textContent = STATE.quizScore;
+  $('finalFishing').textContent = STATE.fishingScore;
+  $('finalChat').textContent = STATE.chatScore;
+  $('finalPuzzle').textContent = STATE.puzzleScore;
+
+  // Подсчёт максимально возможного количества очков
+  const maxPossible =
+    QUIZ_TASKS.length * 10 +
+    FISHING_ROUNDS.length * 20 +
+    CHAT_SCENARIOS.length * 15 +
+    PUZZLE_DATA.length * 10 + 20; // 20 бонус за сбор пазла
+
+  const percent = maxPossible > 0
+    ? Math.round(STATE.totalScore / maxPossible * 100)
+    : 0;
+
+  let emoji='🏆', title='Отличный результат!', lead='';
+  if(STATE.lives <= 0){
+    emoji='💔'; title='Сердечки закончились';
+    lead='Ты столкнулся с серьёзными угрозами. Изучи памятку ниже и попробуй снова — с каждым разом будет проще!';
+  } else if(percent >= 85){
+    emoji='🏆'; title='Ты — Мудрая Рыба аквариума!';
+    lead='Ты отлично распознаёшь мошенников, знаешь безопасные пароли и правила общения. Так держать!';
+  } else if(percent >= 60){
+    emoji='🎯'; title='Хороший заплыв!';
+    lead='Ты уверенно справляешься с большинством задач. Обрати внимание на ошибки и попробуй улучшить результат.';
+  } else if(percent >= 35){
+    emoji='📚'; title='Есть над чем поработать';
+    lead='Часть схем ты распознал, но мошенники хитры. Перечитай памятку ниже и пройди квест снова.';
+  } else {
+    emoji='⚠️'; title='Нужно учиться безопасности';
+    lead='Многие угрозы пока не очевидны. Это нормально! Изучи памятку и попробуй снова — всё получится.';
+  }
+  $('finalEmoji').textContent = emoji;
+  $('finalTitle').textContent = title;
+  $('finalLead').textContent = lead;
+
+  // Прогресс-бар на 100%
+  $('progressBar').style.width = allGamesDone() ? '100%' : progressPercent() + '%';
+  updateTop();
+}
+
+/* ============================================================
+   ПЕРЕЗАПУСК
+   ============================================================ */
+function restartAll(){
+  STATE.totalScore = 0;
+  STATE.lives = 3;
+  STATE.quizScore = 0;
+  STATE.fishingScore = 0;
+  STATE.chatScore = 0;
+  STATE.puzzleScore = 0;
+  STATE.quizDone = false;
+  STATE.fishingDone = false;
+  STATE.chatDone = false;
+  STATE.puzzleDone = false;
+
+  quizState = {current:0, selected:null, answered:false};
+  fishingState = {started:false, round:0, caught:0, total:0, mistakes:0, roundScore:0, moveHandler:null};
+  chatState = {started:false, current:0, selected:null, answered:false};
+  puzzleState = {started:false, selectedQuestion:null, matchedCount:0, mistakes:0, solved:[]};
+
+  $('progressBar').style.width = '0%';
+  updateTop();
+
+  renderQuizTask();
+  switchTab('quiz');
+}
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  updateTop();
+  renderQuizTask();
+  switchTab('quiz');
+});
+</script>
+</body>
+</html>
